@@ -5,15 +5,17 @@ export class Manipulator {
 
   static multiply = (a: number[], b: number[]) => a.map((val, key) => val * b[key] ?? 1);
 
-  static divide = (a: number[], b: number[], euclidean?: boolean) =>
-    a.map((val, key) => (!euclidean ? val / b[key] ?? 1 : val % b[key] ?? 1));
+  static divide = (a: number[], b: number[], euclidean?: boolean) => {
+    return a.map((val, key) => (!euclidean ? val / b[key] ?? 1 : val % b[key] ?? 1));
+  }
 
   static min = (a: number[], b: number[]) => a.map((val, key) => Math.min(val, b[key] ?? 0));
 
   static max = (a: number[], b: number[]) => a.map((val, key) => Math.max(val, b[key] ?? 0));
 
-  static random = (max: number[] = [1, 1], min: number[] = [0, 0]) =>
-    max.map((val, key) => Math.random() * val + min[key] ?? 0);
+  static random = (max: number[] = [1, 1], min: number[] = [0, 0]) => {
+    return max.map((val, key) => Math.random() * val + min[key] ?? 0);
+  };
 
   static swap = (data: number[]) => {
     const ret = [];
@@ -38,9 +40,7 @@ export class Manipulator {
     return ret;
   };
 
-  static floor = (data: number[]) =>
-    // eslint-disable-next-line no-bitwise
-    data.map(val => val | 0);
+  static floor = (data: number[]) => data.map(Math.floor);
 
   static round = (data: number[]) => data.map(Math.round);
 

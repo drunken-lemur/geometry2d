@@ -1,4 +1,4 @@
-import { Manipulator } from './manipulator';
+import { Manipulator } from "./manipulator";
 
 export enum PointField {
   X,
@@ -10,17 +10,23 @@ export interface IPointValue {
   y: number;
 }
 
+export type IChangeCallback<T> = (value: T) => T;
+
+export type IPointValueUnion = IPointValue | IChangeCallback<IPointValue>;
+
+export type IPointArguments = [x: number | IPointValueUnion, y?: number];
+
 export interface IPointBase extends IPointValue {
   clone(): IPointBase;
   get(): IPointValue;
-  set(x: number | IPointValue, y?: number): this;
-  plus(point: IPointValue): this;
-  minus(point: IPointValue): this;
-  multiply(point: IPointValue): this;
-  divide(point: IPointValue, euclidean?: boolean): this;
-  min(point: IPointValue): this;
-  max(point: IPointValue): this;
-  random(max?: IPointValue, min?: IPointValue): this;
+  set(...[x, y]: IPointArguments): this;
+  plus(point: IPointValueUnion): this;
+  minus(point: IPointValueUnion): this;
+  multiply(point: IPointValueUnion): this;
+  divide(point: IPointValueUnion, euclidean?: boolean): this;
+  min(point: IPointValueUnion): this;
+  max(point: IPointValueUnion): this;
+  random(max?: IPointValueUnion, min?: IPointValueUnion): this;
   swap(): this;
   invert(): this;
   invertX(): this;
@@ -29,7 +35,7 @@ export interface IPointBase extends IPointValue {
   round(): this;
   ceil(): this;
   values(): number[];
-  eq(point: IPointValue, or?: boolean): boolean;
+  eq(point: IPointValueUnion, or?: boolean): boolean;
   convert<T>(mapper: (point: IPointValue) => T): T;
 }
 
@@ -37,112 +43,137 @@ export abstract class PointBase implements IPointBase {
   x: number;
   y: number;
 
-  constructor(x: number | IPointValue = 0, y?: number) {
-    if (typeof x === 'number') {
+  constructor(...[x, y]: Partial<IPointArguments>) {
+    if (typeof x === "function") {
+      const point = x({ x: 0, y: 0 });
+      this.x = point.x;
+      this.y = point.y;
+    } else if (typeof x === "number") {
       this.x = x;
       this.y = y ?? x;
     } else {
-      this.x = x.x ?? 0;
-      this.y = x.y ?? x.x ?? 0;
+      this.x = x?.x ?? 0;
+      this.y = x?.y ?? x?.x ?? 0;
+    }
+  }
+
+  static get(...[x, y]: IPointArguments): IPointValue {
+    if (typeof x === "function") {
+      return x({ x: 0, y: 0 });
+    } else if (typeof x === "number") {
+      return { x, y: y ?? x };
+    } else {
+      return {
+        x: x.x ?? 0,
+        y: x.y ?? x.x ?? 0
+      };
     }
   }
 
   static isPoint<T = Record<string, unknown>>(point: T | IPointValue): point is IPointValue | IPointBase {
-    return <T>point instanceof Object && 'x' in point && 'y' in point;
+    return <T>point instanceof Object && "x" in point && "y" in point;
   }
 
-  static plus(a: IPointValue, b: IPointValue): IPointValue {
-    const [x, y] = Manipulator.plus([a.x, a.y], [b.x, b.y]);
+  static plus(a: IPointValueUnion, b: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.plus(PointBase.values(a), PointBase.values(b));
 
     return { x, y };
   }
 
-  static minus(a: IPointValue, b: IPointValue): IPointValue {
-    const [x, y] = Manipulator.minus([a.x, a.y], [b.x, b.y]);
+  static minus(a: IPointValueUnion, b: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.minus(PointBase.values(a), PointBase.values(b));
 
     return { x, y };
   }
 
-  static multiply(a: IPointValue, b: IPointValue): IPointValue {
-    const [x, y] = Manipulator.multiply([a.x, a.y], [b.x, b.y]);
+  static multiply(a: IPointValueUnion, b: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.multiply(PointBase.values(a), PointBase.values(b));
 
     return { x, y };
   }
 
-  static divide(a: IPointValue, b: IPointValue, euclidean?: boolean): IPointValue {
-    const [x, y] = Manipulator.divide([a.x, a.y], [b.x, b.y], euclidean);
+  static divide(a: IPointValueUnion, b: IPointValueUnion, euclidean?: boolean): IPointValue {
+    const [x, y] = Manipulator.divide(PointBase.values(a), PointBase.values(b), euclidean);
 
     return { x, y };
   }
 
-  static min(a: IPointValue, b: IPointValue): IPointValue {
-    const [x, y] = Manipulator.min([a.x, a.y], [b.x, b.y]);
+  static min(a: IPointValueUnion, b: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.min(PointBase.values(a), PointBase.values(b));
 
     return { x, y };
   }
 
-  static max(a: IPointValue, b: IPointValue): IPointValue {
-    const [x, y] = Manipulator.max([a.x, a.y], [b.x, b.y]);
+  static max(a: IPointValueUnion, b: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.max(PointBase.values(a), PointBase.values(b));
 
     return { x, y };
   }
 
-  static random(max?: IPointValue, min?: IPointValue): IPointValue {
-    const [x, y] = Manipulator.random([max?.x ?? 1, max?.y ?? 1], [min?.x ?? 0, min?.y ?? 0]);
+  static random(max?: IPointValueUnion, min?: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.random(
+      PointBase.values(max ?? 1),
+      PointBase.values(min ?? 0)
+    );
 
     return { x, y };
   }
 
-  static swap(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.swap([point.x, point.y]);
+  static swap(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.swap(PointBase.values(point));
 
     return { x, y };
   }
 
-  static invert(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.invert([point.x, point.y]);
+  static invert(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.invert(PointBase.values(point));
 
     return { x, y };
   }
 
-  static invertX(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.invertByKey([point.x, point.y], PointField.X);
+  static invertX(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.invertByKey(PointBase.values(point), PointField.X);
 
     return { x, y };
   }
 
-  static invertY(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.invertByKey([point.x, point.y], PointField.Y);
+  static invertY(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.invertByKey(PointBase.values(point), PointField.Y);
 
     return { x, y };
   }
 
-  static floor(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.floor([point.x, point.y]);
+  static floor(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.floor(PointBase.values(point));
 
     return { x, y };
   }
 
-  static round(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.round([point.x, point.y]);
+  static round(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.round(PointBase.values(point));
 
     return { x, y };
   }
 
-  static ceil(point: IPointValue): IPointValue {
-    const [x, y] = Manipulator.ceil([point.x, point.y]);
+  static ceil(point: IPointValueUnion): IPointValue {
+    const [x, y] = Manipulator.ceil(PointBase.values(point));
 
     return { x, y };
   }
 
-  static values(point: IPointValue): number[] {
-    const { x, y } = point;
-
-    return [x ?? 0, y ?? 0];
+  static values(...[x, y]: IPointArguments): number[] {
+    if (typeof x === "function") {
+      const val = x({ x: 0, y: 0 });
+      return [val.x, val.y];
+    } else if (typeof x === "number") {
+      return [x, y ?? x];
+    } else {
+      return [x.x ?? 0, x.y ?? x.x ?? 0];
+    }
   }
 
-  static eq(a: IPointValue, b: IPointValue, allFields = true): boolean {
-    return Manipulator.eq([a.x, a.y], [b.x, b.y], allFields);
+  static eq(a: IPointValueUnion, b: IPointValueUnion, allFields = true): boolean {
+    return Manipulator.eq(PointBase.values(a), PointBase.values(b), allFields);
   }
 
   static convert<T>(mapper: (point: IPointValue) => T, point: IPointValue): T {
@@ -157,43 +188,39 @@ export abstract class PointBase implements IPointBase {
     return { x, y };
   }
 
-  set(x: number | IPointValue = 0, y?: number) {
-    if (typeof x === 'number') {
-      this.x = x;
-      this.y = y ?? x;
-    } else {
-      this.x = x.x ?? 0;
-      this.y = x.y ?? x.x ?? 0;
-    }
+  set(...[x, y]: IPointArguments) {
+    const value = PointBase.get(x, y);
+    this.x = value.x;
+    this.y = value.y;
 
     return this;
   }
 
-  plus(point: IPointValue) {
+  plus(point: IPointValueUnion) {
     return this.set(PointBase.plus(this, point));
   }
 
-  minus(point: IPointValue) {
+  minus(point: IPointValueUnion) {
     return this.set(PointBase.minus(this, point));
   }
 
-  multiply(point: IPointValue) {
+  multiply(point: IPointValueUnion) {
     return this.set(PointBase.multiply(this, point));
   }
 
-  divide(point: IPointValue, euclidean = false) {
+  divide(point: IPointValueUnion, euclidean = false) {
     return this.set(PointBase.divide(this, point, euclidean));
   }
 
-  min(point: IPointValue) {
+  min(point: IPointValueUnion) {
     return this.set(PointBase.min(this, point));
   }
 
-  max(point: IPointValue) {
+  max(point: IPointValueUnion) {
     return this.set(PointBase.max(this, point));
   }
 
-  random(max?: IPointValue, min?: IPointValue) {
+  random(max?: IPointValueUnion, min?: IPointValueUnion) {
     return this.set(PointBase.random(max, min));
   }
 
@@ -229,7 +256,7 @@ export abstract class PointBase implements IPointBase {
     return PointBase.values(this);
   }
 
-  eq(point: IPointValue, allFields = true): boolean {
+  eq(point: IPointValueUnion, allFields = true): boolean {
     return PointBase.eq(this, point, allFields);
   }
 

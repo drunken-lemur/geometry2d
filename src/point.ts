@@ -1,17 +1,17 @@
-import { ISizeValue } from './sizeBase';
-import { Manipulator } from './manipulator';
-import { IPointValue, IPointBase, PointBase } from './pointBase';
+import { Manipulator } from "./manipulator";
+import { IPointArguments, IPointBase, IPointValue, IPointValueUnion, PointBase } from "./pointBase";
 
-export { IPointValue, IPointBase, PointField } from './pointBase';
+export { IPointArguments, IPointBase, IPointValue, IPointValueUnion, PointBase } from "./pointBase";
 
 export interface IPoint extends IPointBase {
   clone(): IPoint;
-
-  isLess(point: IPointValue, orEqual?: boolean, both?: boolean): boolean;
-  isMore(point: IPointValue, orEqual?: boolean, both?: boolean): boolean;
-  toSize(): ISizeValue;
-  getDistance(x: number | IPointValue, y?: number): number;
+  isLess(point: IPointValueUnion, orEqual?: boolean, both?: boolean): boolean;
+  isMore(point: IPointValueUnion, orEqual?: boolean, both?: boolean): boolean;
+  getDistance(...[x, y]: IPointArguments): number;
   moveToAngle(angle: number, length: number, deg: boolean): this;
+  toJSON(): string;
+  valueOf(): string;
+  toString(): string;
 }
 
 export class Point extends PointBase implements IPoint {
@@ -19,22 +19,19 @@ export class Point extends PointBase implements IPoint {
     return PointBase.isPoint(point);
   }
 
-  static isLess(a: IPointValue, b: IPointValue, orEqual = false, allFields = true): boolean {
-    return Manipulator.isLess([a.x, a.y], [b.x, b.y], orEqual, allFields);
+  static isLess(a: IPointValueUnion, b: IPointValueUnion, orEqual = false, allFields = true): boolean {
+    return Manipulator.isLess(PointBase.values(a), PointBase.values(b), orEqual, allFields);
   }
 
-  static isMore(a: IPointValue, b: IPointValue, orEqual = false, allFields = true): boolean {
-    return Manipulator.isMore([a.x, a.y], [b.x, b.y], orEqual, allFields);
+  static isMore(a: IPointValueUnion, b: IPointValueUnion, orEqual = false, allFields = true): boolean {
+    return Manipulator.isMore(PointBase.values(a), PointBase.values(b), orEqual, allFields);
   }
 
-  static toSize({ x, y }: IPointValue): ISizeValue {
-    return { w: x, h: y };
-  }
-
-  static getDistance(a: IPointValue, b: IPointValue): number {
+  static getDistance(a: IPointValueUnion, b: IPointValueUnion): number {
     const { abs, sqrt } = Math;
+    const [A, B] = [PointBase.get(a), PointBase.get(b)];
 
-    return sqrt(abs(a.x - b.x) ** 2 + abs(a.y - b.y) ** 2);
+    return sqrt(abs(A.x - B.x) ** 2 + abs(A.y - B.y) ** 2);
   }
 
   static ofAngle(angle: number, length = 1, deg = false) {
@@ -46,36 +43,30 @@ export class Point extends PointBase implements IPoint {
     return { x, y };
   }
 
-  static moveToAngle(point: IPointValue, angle: number, length: number, deg = false): IPointValue {
+  static moveToAngle(point: IPointValueUnion, angle: number, length: number, deg = false): IPointValue {
     const a = angle * (deg ? Math.PI / 180 : Math.PI);
-
-    const x = length * Math.cos(a);
-    const y = length * Math.sin(a);
+    const [x, y] = PointBase.values(point);
 
     return {
-      x: point.x + x,
-      y: point.y + y,
+      x: x + length * Math.cos(a),
+      y: y + length * Math.sin(a),
     };
   }
 
   clone(): IPoint {
-    return new Point(this);
+    return new Point(this.x, this.y);
   }
 
-  isLess(point: IPointValue, orEqual = false, allFields = true): boolean {
+  isLess(point: IPointValueUnion, orEqual = false, allFields = true): boolean {
     return Point.isLess(this, point, orEqual, allFields);
   }
 
-  isMore(point: IPointValue, orEqual = false, allFields = true): boolean {
+  isMore(point: IPointValueUnion, orEqual = false, allFields = true): boolean {
     return Point.isMore(this, point, orEqual, allFields);
   }
 
-  toSize(): ISizeValue {
-    return Point.toSize(this);
-  }
-
-  getDistance(x: number | IPointValue, y?: number): number {
-    return Point.getDistance(this, new Point(x, y));
+  getDistance(...[x, y]: IPointArguments): number {
+    return Point.getDistance(this, PointBase.get(x, y));
   }
 
   moveToAngle(angle: number, length: number, deg = false) {
@@ -83,7 +74,7 @@ export class Point extends PointBase implements IPoint {
   }
 
   toJSON() {
-    return this.get();
+    return JSON.stringify(this.get());
   }
 
   valueOf() {

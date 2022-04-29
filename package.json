@@ -1,6 +1,6 @@
 {
   "name": "geometry2d",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Classes for geometry 2D",
   "author": "Enot-Racoon",
   "license": "MIT",
@@ -8,7 +8,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "postinstall": "npm run build && rm -rf node_modules src __tests__",
+    "postinstall": "npm run build",
+    "bulid:clean": "rm -rf node_modules src __tests__",
     "test": "jest"
   },
   "jest": {
@@ -21,7 +22,7 @@
     "@types/jest": "^26.0.23",
     "@typescript-eslint/eslint-plugin": "^4.23.0",
     "@typescript-eslint/parser": "^4.23.0",
-    "eslint": "^7.26.0",
+    "eslint": "^8.14.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",

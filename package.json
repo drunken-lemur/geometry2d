@@ -1,6 +1,6 @@
 {
   "name": "geometry2d",
-  "version": "0.0.5",
+  "version": "0.0.9",
   "description": "Classes for geometry 2D",
   "author": "Enot-Racoon",
   "license": "MIT",
@@ -8,8 +8,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "rebuild": "npm run bulid:clean && npm i && npm run build",
+    "bulid:clean": "rm -rf node_modules __tests__ package-lock.json yarn.lock",
     "postinstall": "npm run build",
-    "bulid:clean": "rm -rf node_modules src __tests__",
+    "postinstall:clean": "rm -rf node_modules src __tests__",
     "test": "jest"
   },
   "jest": {

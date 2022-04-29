@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc",
     "rebuild": "npm run bulid:clean && npm i && npm run build",
-    "bulid:clean": "rm -rf node_modules __tests__ package-lock.json yarn.lock",
+    "bulid:clean": "rm -rf node_modules package-lock.json yarn.lock",
     "postinstall": "npm run build",
     "postinstall:clean": "rm -rf node_modules src __tests__",
     "test": "jest"
